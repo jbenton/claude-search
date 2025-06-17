@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Conversation Search</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #faf9f5;
+            color: #333333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f5f4ed;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+            margin-bottom: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-logo {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .help-button {
+            background: #d4a574;
+            color: #141413;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .help-button:hover {
+            background: #c19660;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666666;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333333;
+        }
+
+        .modal-body {
+            color: #333333;
+            line-height: 1.4;
+        }
+
+        .modal-body h3 {
+            margin: 24px 0 8px 0;
+            color: #333333;
+        }
+
+        .modal-body h3:first-child {
+            margin-top: 16px;
+        }
+
+        .modal-body ol {
+            padding-left: 20px;
+        }
+
+        .modal-body ul {
+            padding-left: 20px;
+        }
+
+        .modal-body li {
+            margin: 8px 0;
+        }
+
+        .modal-body code {
+            background: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .modal-body a {
+            color: #d4a574;
+            text-decoration: none;
+        }
+
+        .modal-body a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-footer {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+
+        .modal-footer a {
+            color: #d4a574;
+            text-decoration: none;
+        }
+
+        .modal-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 8px;
+            color: #333333;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #999999;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-clear:hover {
+            background: #f0f0f0;
+            color: #666666;
+        }
+
+        .search-clear.visible {
+            display: flex;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #d4a574;
+        }
+
+        .file-input-container {
+            margin-top: 15px;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 8px;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            color: #333333;
+            font-size: 12px;
+        }
+
+        .sort-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .sort-button {
+            padding: 4px 8px;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sort-button.active {
+            background: #d4a574;
+            color: #141413;
+            border-color: #d4a574;
+        }
+
+        .sort-button:hover:not(.active) {
+            background: #f0f0f0;
+        }
+
+        .stats {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666666;
+        }
+
+        .conversation-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .conversation-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .conversation-item:hover {
+            background: #f0f0f0;
+        }
+
+        .conversation-item.active {
+            background: #f0eee6;
+            border-left-color: #d4a574;
+        }
+
+        .conversation-item.has-matches {
+            border-left-color: #ff8c00;
+        }
+
+        .conversation-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .conversation-preview {
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .conversation-date {
+            font-size: 11px;
+            color: #888888;
+            margin-top: 4px;
+        }
+
+        .conversation-dates {
+            font-size: 10px;
+            color: #888888;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+
+        .date-label {
+            font-weight: 500;
+            color: #666666;
+        }
+
+        .match-count {
+            background: #ff8c00;
+            color: #ffffff;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            float: right;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #faf9f5;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f5f4ed;
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: inline;
+        }
+
+        .chat-meta {
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.4;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+            outline: none;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            scroll-margin-top: 20px;
+        }
+
+        .message.human {
+            align-items: flex-end;
+            margin-left: auto;
+            margin-right: 0;
+        }
+
+        .message.human .message-header {
+            flex-direction: row-reverse;
+        }
+
+        .message.assistant {
+            align-items: flex-start;
+            margin-left: 0;
+            margin-right: auto;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sender-label {
+            font-weight: 600;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 16px;
+            margin-right: 12px;
+        }
+
+        .sender-human {
+            background: #f0eee6;
+            color: #141413;
+        }
+
+        .sender-assistant {
+            background: #e0e0e0;
+            color: #333333;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #888888;
+            margin-left: 12px;
+        }
+
+        .message.human .message-time {
+            margin-left: 0;
+            margin-right: 12px;
+        }
+
+        .message-content {
+            background: transparent;
+            padding: 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .message.human .message-content {
+            background: #f0eee6;
+            color: #141413;
+        }
+
+        .message.human .message-content code {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .message.human .message-content pre {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .message.human .message-content blockquote {
+            border-left-color: #cbcbcb;
+            color: inherit;
+        }
+
+        .message.human .message-content a {
+            color: inherit;
+        }
+
+        .highlight {
+            background: #ffeb3b;
+            color: #333333;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666666;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 12px;
+            font-size: 24px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666666;
+        }
+
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #d0d0d0;
+            border-radius: 3px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #b0b0b0;
+        }
+
+        .conversation-list::-webkit-scrollbar,
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .conversation-list::-webkit-scrollbar-track,
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .conversation-list::-webkit-scrollbar-thumb,
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #d0d0d0;
+            border-radius: 3px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666666;
+        }
+
+        /* Markdown styling */
+        .message-content h1, .message-content h2, .message-content h3, 
+        .message-content h4, .message-content h5, .message-content h6 {
+            margin: 16px 0 8px 0;
+            font-weight: 600;
+        }
+
+        .message-content h1 { font-size: 1.5em; }
+        .message-content h2 { font-size: 1.3em; }
+        .message-content h3 { font-size: 1.1em; }
+
+        .message-content p {
+            margin: 8px 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .message-content code {
+            background: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content pre {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-content blockquote {
+            border-left: 3px solid #d0d0d0;
+            margin: 8px 0;
+            padding-left: 16px;
+            color: #666666;
+        }
+
+        .message-content strong {
+            font-weight: 600;
+        }
+
+        .message-content em {
+            font-style: italic;
+        }
+
+        .message-content a {
+            color: #d4a574;
+            text-decoration: underline;
+        }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+        
+        .external-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 12px;
+            padding: 4px 8px;
+            background: #d4a574;
+            color: #141413;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .external-link-btn:hover {
+            background: #c19660;
+            text-decoration: none;
+        }
+
+        .external-link-icon {
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="search-header">
+                <h1 class="app-title">
+                    <img src="logo.png" alt="Claude Conversation Search" class="app-logo">
+                    <span>Claude Conversation Search</span>
+                </h1>
+                
+                <div class="search-container">
+                    <input type="text" class="search-box" placeholder="Search conversations..." id="searchInput">
+                    <button class="search-clear" id="searchClear" onclick="viewer.clearSearch()" title="Clear search">×</button>
+                </div>
+                
+                <div class="file-input-container">
+                    <button class="help-button" onclick="viewer.showHelp()">How to use this</button>
+                    <input type="file" class="file-input" id="fileInput" accept=".json" title="Load conversations.json file">
+                    <div class="sort-controls">
+                        <button class="sort-button active" id="sortByModified" onclick="viewer.setSortMode('modified')">Last Modified</button>
+                        <button class="sort-button" id="sortByCreated" onclick="viewer.setSortMode('created')">Created</button>
+                    </div>
+                    <div class="stats" id="stats">No conversations loaded</div>
+                </div>
+            </div>
+            <div class="conversation-list" id="conversationList">
+                <div class="empty-state">
+                    <p>Click "How to use this" above to learn how to load your Claude conversations.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+			<div class="chat-header" id="chatHeader" style="display: none;">
+				<div style="display: flex; align-items: center; justify-content: space-between;">
+					<div class="chat-title" id="chatTitle"></div>
+					<a href="#" class="external-link-btn" id="externalLink" target="_blank" rel="noopener noreferrer">
+						Open in Claude
+						<svg class="external-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+						</svg>
+					</a>
+				</div>
+				<div class="chat-meta" id="chatMeta"></div>
+			</div>
+            <div class="chat-container" id="chatContainer" tabindex="0">
+                <div class="empty-state">
+                    <h2>Select a conversation</h2>
+                    <p>Choose a conversation from the sidebar to start reading.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">How to use Claude Conversation Search</h2>
+                <button class="modal-close" onclick="viewer.hideHelp()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Claude doesn't let you search across your conversations — but it does let you export them. This tool lets you browse through past chats and search through them by keyword.</p>
+                
+                <h3>Getting your data</h3>
+                <ol>
+                    <li>Go to <a href="https://claude.ai/settings/data-privacy-controls" target="_blank">https://claude.ai/settings/data-privacy-controls</a> in your browser</li>
+                    <li>Scroll down to the <strong>Data controls</strong> section</li>
+                    <li>Click the <strong>Export data</strong> button</li>
+                    <li>In the modal that appears, click <strong>Export data</strong> again to confirm</li>
+                    <li>Check your email for a download link (it might take a minute or two)</li>
+                    <li>Download and <strong>unzip</strong> the file you receive</li>
+                </ol>
+
+                <h3>Loading your conversations</h3>
+                <ol>
+                    <li>Click <strong>Choose File</strong> above</li>
+                    <li>Navigate to your unzipped folder</li>
+                    <li>Select the <code>conversations.json</code> file</li>
+                    <li>Your conversations will load onto this page</li>
+                </ol>
+
+                <h3>Using the interface</h3>
+                <ul>
+                    <li><strong>Sort:</strong> Toggle <strong>Last Modified</strong>/<strong>Created</strong> to change the conversation order</li>
+                    <li><strong>Search:</strong> Use the search box to find chat containing specific keywords</li>
+                    <li><strong>Browse:</strong> Click any conversation to read it in the main interface</li>
+                    <li><strong>Artifacts:</strong> Note that Claude's export tool doesn't include Artifacts, but in-chat code blocks will appear, and Claude's Markdown formatting (bold, code, lists) should render properly</li>
+                </ul>
+
+                <h3>Privacy</h3>
+                <p>This tool runs entirely in your browser; your data never leaves your computer.</p>
+            </div>
+            <div class="modal-footer">
+                Code by <a href="https://github.com/jbenton/claude-conversation-search" target="_blank">@jbenton</a> and Claude Sonnet 4
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js"></script>
+    <script>
+        class ClaudeViewer {
+            constructor() {
+                this.conversations = [];
+                this.filteredConversations = [];
+                this.currentConversation = null;
+                this.searchTerm = '';
+                this.sortMode = 'modified'; // 'modified' or 'created'
+                
+                this.initEventListeners();
+            }
+
+            initEventListeners() {
+                const fileInput = document.getElementById('fileInput');
+                const searchInput = document.getElementById('searchInput');
+
+                fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+                searchInput.addEventListener('input', (e) => {
+                    this.handleSearch(e.target.value);
+                    this.updateSearchClearButton();
+                });
+                
+                // Close modal when clicking outside
+                document.getElementById('helpModal').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal-overlay')) {
+                        this.hideHelp();
+                    }
+                });
+                
+                // Close modal with Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.hideHelp();
+                    }
+                });
+                
+                // Add event listener for search clear functionality
+                this.updateSearchClearButton();
+            }
+
+            updateSearchClearButton() {
+                const searchInput = document.getElementById('searchInput');
+                const clearButton = document.getElementById('searchClear');
+                
+                if (searchInput.value.trim()) {
+                    clearButton.classList.add('visible');
+                } else {
+                    clearButton.classList.remove('visible');
+                }
+            }
+
+            clearSearch() {
+                const searchInput = document.getElementById('searchInput');
+                searchInput.value = '';
+                this.handleSearch('');
+                this.updateSearchClearButton();
+                searchInput.focus();
+            }
+
+            showHelp() {
+                const modal = document.getElementById('helpModal');
+                modal.classList.add('visible');
+                document.body.style.overflow = 'hidden';
+            }
+
+            hideHelp() {
+                const modal = document.getElementById('helpModal');
+                modal.classList.remove('visible');
+                document.body.style.overflow = 'auto';
+            }
+
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    
+                    if (Array.isArray(data)) {
+                        this.conversations = data;
+                        
+                        // Sort messages within each conversation chronologically
+                        this.conversations.forEach(conv => {
+                            if (conv.chat_messages) {
+                                conv.chat_messages.sort((a, b) => {
+                                    const dateA = new Date(a.created_at);
+                                    const dateB = new Date(b.created_at);
+                                    return dateA - dateB;
+                                });
+                            }
+                        });
+                        
+                        this.sortConversations();
+                        this.filteredConversations = [...this.conversations];
+                        this.updateStats();
+                        this.renderConversationList();
+                        console.log(`Loaded ${this.conversations.length} conversations`);
+                    } else {
+                        throw new Error('Invalid file format');
+                    }
+                } catch (error) {
+                    this.showError('Error loading file: ' + error.message);
+                    console.error('Error loading conversations:', error);
+                }
+            }
+
+            setSortMode(mode) {
+                this.sortMode = mode;
+                
+                // Update button states
+                document.getElementById('sortByModified').classList.toggle('active', mode === 'modified');
+                document.getElementById('sortByCreated').classList.toggle('active', mode === 'created');
+                
+                // Re-sort and re-render
+                this.sortConversations();
+                this.filteredConversations = this.searchTerm ? 
+                    this.applySearch(this.conversations, this.searchTerm) : 
+                    [...this.conversations];
+                this.renderConversationList();
+            }
+
+            sortConversations() {
+                this.conversations.sort((a, b) => {
+                    let dateA, dateB;
+                    
+                    if (this.sortMode === 'modified') {
+                        dateA = new Date(a.updated_at || a.created_at);
+                        dateB = new Date(b.updated_at || b.created_at);
+                    } else {
+                        dateA = new Date(a.created_at);
+                        dateB = new Date(b.created_at);
+                    }
+                    
+                    return dateB - dateA; // Most recent first
+                });
+            }
+
+            handleSearch(term) {
+                this.searchTerm = term.toLowerCase().trim();
+                
+                if (!this.searchTerm) {
+                    this.filteredConversations = [...this.conversations];
+                } else {
+                    this.filteredConversations = this.applySearch(this.conversations, this.searchTerm);
+                }
+                
+                this.renderConversationList();
+                this.updateStats();
+                
+                // If we're viewing a conversation and it no longer matches, clear the view
+                if (this.currentConversation && this.searchTerm) {
+                    const currentStillVisible = this.filteredConversations.find(
+                        c => c.uuid === this.currentConversation.uuid
+                    );
+                    if (!currentStillVisible) {
+                        this.clearConversationView();
+                    } else {
+                        // Re-render with highlights
+                        this.displayConversation(currentStillVisible);
+                    }
+                }
+            }
+
+            applySearch(conversations, term) {
+                return conversations.map(conv => {
+                    const matches = this.searchInConversation(conv, term);
+                    return {
+                        ...conv,
+                        searchMatches: matches,
+                        matchCount: matches.length
+                    };
+                }).filter(conv => conv.matchCount > 0);
+            }
+
+            searchInConversation(conversation, term) {
+                const matches = [];
+                
+                conversation.chat_messages?.forEach((message, msgIndex) => {
+                    const content = this.getMessageText(message).toLowerCase();
+                    if (content.includes(term)) {
+                        matches.push({
+                            messageIndex: msgIndex,
+                            sender: message.sender,
+                            preview: this.getContextAroundMatch(content, term, 100)
+                        });
+                    }
+                });
+                
+                return matches;
+            }
+
+            getContextAroundMatch(text, term, contextLength = 100) {
+                const index = text.indexOf(term);
+                const start = Math.max(0, index - contextLength);
+                const end = Math.min(text.length, index + term.length + contextLength);
+                
+                let context = text.substring(start, end);
+                if (start > 0) context = '...' + context;
+                if (end < text.length) context = context + '...';
+                
+                return context;
+            }
+
+            getMessageText(message) {
+                if (message.text) return message.text;
+                if (message.content && Array.isArray(message.content)) {
+                    return message.content
+                        .filter(item => item.type === 'text')
+                        .map(item => item.text)
+                        .join(' ');
+                }
+                return '';
+            }
+
+            updateStats() {
+                const stats = document.getElementById('stats');
+                const total = this.conversations.length;
+                const filtered = this.filteredConversations.length;
+                
+                if (total === 0) {
+                    stats.textContent = 'No conversations loaded';
+                } else if (this.searchTerm) {
+                    const totalMatches = this.filteredConversations.reduce(
+                        (sum, conv) => sum + (conv.matchCount || 0), 0
+                    );
+                    stats.textContent = `${filtered} conversations, ${totalMatches} matches`;
+                } else {
+                    stats.textContent = `${total} conversations`;
+                }
+            }
+
+            renderConversationList() {
+                const container = document.getElementById('conversationList');
+                
+                if (this.filteredConversations.length === 0) {
+                    if (this.conversations.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <p>Click "Choose file" above to load your conversations.json file.</p>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = `
+                            <div class="no-results">
+                                <h2>No matches found</h2>
+                                <p>Try a different search term</p>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+
+                container.innerHTML = this.filteredConversations.map(conv => {
+                    const title = this.getConversationTitle(conv);
+                    const preview = this.getConversationPreview(conv);
+                    const createdDate = this.formatDate(conv.created_at);
+                    const updatedDate = this.formatDate(conv.updated_at);
+                    const matchCount = conv.matchCount || 0;
+                    const hasMatches = matchCount > 0;
+                    
+                    return `
+                        <div class="conversation-item ${hasMatches ? 'has-matches' : ''}" 
+                             data-uuid="${conv.uuid}"
+                             onclick="viewer.selectConversation('${conv.uuid}')">
+                            <div class="conversation-title">
+                                ${this.escapeHtml(title)}
+                                ${hasMatches ? `<span class="match-count">${matchCount}</span>` : ''}
+                            </div>
+                            <div class="conversation-preview">${this.escapeHtml(preview)}</div>
+                            <div class="conversation-dates">
+                                <div><span class="date-label">Created:</span> ${createdDate}</div>
+                                ${updatedDate !== createdDate ? `<div><span class="date-label">Modified:</span> ${updatedDate}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            getConversationTitle(conversation) {
+                if (conversation.name && conversation.name.trim()) {
+                    return conversation.name.trim();
+                }
+                
+                // Get the first human message as title
+                const firstHuman = conversation.chat_messages?.find(msg => msg.sender === 'human');
+                if (firstHuman) {
+                    const text = this.getMessageText(firstHuman);
+                    return text.substring(0, 50) + (text.length > 50 ? '...' : '');
+                }
+                
+                return 'Untitled Conversation';
+            }
+
+            getConversationPreview(conversation) {
+                if (this.searchTerm && conversation.searchMatches && conversation.searchMatches.length > 0) {
+                    // Show the context around the first match, with the search term highlighted
+                    const firstMatch = conversation.searchMatches[0];
+                    const messageText = this.getMessageText(conversation.chat_messages[firstMatch.messageIndex]);
+                    const searchIndex = messageText.toLowerCase().indexOf(this.searchTerm);
+                    
+                    if (searchIndex !== -1) {
+                        const contextStart = Math.max(0, searchIndex - 50);
+                        const contextEnd = Math.min(messageText.length, searchIndex + this.searchTerm.length + 50);
+                        
+                        let preview = messageText.substring(contextStart, contextEnd);
+                        if (contextStart > 0) preview = '...' + preview;
+                        if (contextEnd < messageText.length) preview = preview + '...';
+                        
+                        return preview;
+                    }
+                }
+                
+                const firstMessage = conversation.chat_messages?.[0];
+                if (firstMessage) {
+                    const text = this.getMessageText(firstMessage);
+                    return text.substring(0, 100) + (text.length > 100 ? '...' : '');
+                }
+                return 'No messages';
+            }
+
+            selectConversation(uuid) {
+                const conversation = this.filteredConversations.find(c => c.uuid === uuid);
+                if (!conversation) return;
+
+                // Update UI
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.querySelector(`[data-uuid="${uuid}"]`)?.classList.add('active');
+
+                this.displayConversation(conversation);
+                
+                // Focus the chat container so cmd+f will start searching there
+                // Only do this when user actually clicks a conversation
+                setTimeout(() => {
+                    const container = document.getElementById('chatContainer');
+                    container.focus();
+                }, 50);
+            }
+
+            displayConversation(conversation) {
+                this.currentConversation = conversation;
+                
+                const header = document.getElementById('chatHeader');
+                const title = document.getElementById('chatTitle');
+                const meta = document.getElementById('chatMeta');
+                const container = document.getElementById('chatContainer');
+
+				// Show header
+				header.style.display = 'block';
+				const conversationTitle = this.getConversationTitle(conversation);
+				title.textContent = conversationTitle;
+				
+				// Set up external link
+				const externalLink = document.getElementById('externalLink');
+				externalLink.href = `https://claude.ai/chat/${conversation.uuid}`;
+				externalLink.title = `Open "${conversationTitle}" in Claude.ai`;
+
+                const messageCount = conversation.chat_messages?.length || 0;
+                const createdDate = this.formatDate(conversation.created_at);
+                const updatedDate = this.formatDate(conversation.updated_at);
+                
+                let metaText = `${messageCount} messages • Created: ${createdDate}`;
+                if (updatedDate !== createdDate) {
+                    metaText += `\n • Last modified: ${updatedDate}`;
+                }
+                meta.textContent = metaText;
+
+                // Render messages
+                container.innerHTML = this.renderMessages(conversation);
+                
+                // If there's a search term and matches, scroll to the first match
+                if (this.searchTerm && conversation.searchMatches && conversation.searchMatches.length > 0) {
+                    setTimeout(() => {
+                        const firstMatchIndex = conversation.searchMatches[0].messageIndex;
+                        const messageElement = container.querySelector(`[data-message-index="${firstMatchIndex}"]`);
+                        if (messageElement) {
+                            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 100);
+                } else {
+                    container.scrollTop = 0;
+                }
+            }
+
+            renderMessages(conversation) {
+                if (!conversation.chat_messages || conversation.chat_messages.length === 0) {
+                    return '<div class="empty-state"><p>No messages in this conversation</p></div>';
+                }
+
+                return conversation.chat_messages.map((message, index) => {
+                    const text = this.getMessageText(message);
+                    
+                    // Convert markdown to HTML
+                    let htmlContent = marked.parse(text);
+                    
+                    // Apply search highlighting to the HTML
+                    if (this.searchTerm) {
+                        htmlContent = this.highlightInHtml(htmlContent, this.searchTerm);
+                    }
+                    
+                    const time = this.formatDateTime(message.created_at);
+                    const senderClass = message.sender === 'human' ? 'human' : 'assistant';
+                    const senderLabel = message.sender === 'human' ? 'You' : 'Claude';
+
+                    return `
+                        <div class="message ${senderClass}" data-message-index="${index}">
+                            <div class="message-header">
+                                <div class="sender-label sender-${message.sender}">${senderLabel}</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                            <div class="message-content">${htmlContent}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            highlightInHtml(html, term) {
+                if (!term) return html;
+                
+                // Create a temporary element to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // Function to highlight text in text nodes only
+                const highlightTextNodes = (node) => {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const text = node.textContent;
+                        const regex = new RegExp(`(${this.escapeRegex(term)})`, 'gi');
+                        if (regex.test(text)) {
+                            const highlightedText = text.replace(regex, '<span class="highlight">$1</span>');
+                            const wrapper = document.createElement('span');
+                            wrapper.innerHTML = highlightedText;
+                            node.parentNode.replaceChild(wrapper, node);
+                        }
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Don't highlight inside code blocks or other special elements
+                        if (!['CODE', 'PRE'].includes(node.tagName)) {
+                            Array.from(node.childNodes).forEach(highlightTextNodes);
+                        }
+                    }
+                };
+                
+                Array.from(tempDiv.childNodes).forEach(highlightTextNodes);
+                return tempDiv.innerHTML;
+            }
+
+            highlightText(text, term) {
+                if (!term) return this.escapeHtml(text);
+                
+                const escapedText = this.escapeHtml(text);
+                const escapedTerm = this.escapeHtml(term);
+                const regex = new RegExp(`(${this.escapeRegex(escapedTerm)})`, 'gi');
+                
+                return escapedText.replace(regex, '<span class="highlight">$1</span>');
+            }
+
+            escapeRegex(text) {
+                return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            formatDate(dateString) {
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                } catch {
+                    return 'Invalid date';
+                }
+            }
+
+            formatTime(dateString) {
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                } catch {
+                    return '';
+                }
+            }
+
+            formatDateTime(dateString) {
+                try {
+                    const date = new Date(dateString);
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(today.getDate() - 1);
+                    
+                    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    const yesterdayDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+                    
+                    const time = date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                    
+                    if (messageDate.getTime() === todayDate.getTime()) {
+                        return time;
+                    } else if (messageDate.getTime() === yesterdayDate.getTime()) {
+                        return `Yesterday ${time}`;
+                    } else {
+                        return `${date.toLocaleDateString()} ${time}`;
+                    }
+                } catch {
+                    return 'Invalid date';
+                }
+            }
+
+            clearConversationView() {
+                this.currentConversation = null;
+                document.getElementById('chatHeader').style.display = 'none';
+                document.getElementById('chatContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h2>Select a conversation</h2>
+                        <p>Choose a conversation from the sidebar to start reading.</p>
+                    </div>
+                `;
+            }
+
+            showError(message) {
+                const container = document.getElementById('conversationList');
+                container.innerHTML = `<div class="error">${this.escapeHtml(message)}</div>`;
+            }
+        }
+
+        // Initialize the app
+        const viewer = new ClaudeViewer();
+    </script>
+</body>
+</html>
