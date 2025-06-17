@@ -2,7 +2,10 @@
 
 Claude doesn't let you search across your conversations — but it does let you export them. This tool lets you browse through past chats and search them by keyword.
 
-![Screenshot of Claude Conversation Search](claude-conversation-search/claude-conversation-search-screenshot.png)
+If you don't want to bother downloading the repo, you can also use it at **https://jbenton.github.io/claude-search/**.
+
+
+![Screenshot of Claude Conversation Search](claude-conversation-search-screenshot.png)
 
 ## Getting your data
 - Go to https://claude.ai/settings/data-privacy-controls in your browser.
